@@ -1,43 +1,118 @@
 package org.usfirst.frc.team5033.robot;
-
-import edu.wpi.first.wpilibj.SampleRobot;
-import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.RobotDrive;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Timer;
-
-public class Robot extends SampleRobot {
-	Joystick Stick = new Joystick(0); 
-	boolean buttonGet = Stick.getRawButton(2);
-	double speedset = 0.3;
-	Talon speedFL = new Talon(0);
-	Talon speedBL = new Talon(1);
-	Talon speedFR = new Talon(2);
-	Talon speedBR = new Talon(3);
-	RobotDrive myRobot = new RobotDrive(speedFL, speedBL, speedFR, speedBR);  // class that handles basic drive		
+import edu.wpi.first.wpilibj.CameraServer;
+import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 
-	public Robot() {
-		myRobot.setExpiration(0.1);
-		speedFL.set(speedset);
-		speedBL.set(speedset);
-		speedFR.set(speedset);
-		speedBR.set(speedset);
+
+@SuppressWarnings("unused")
+public class Robot extends IterativeRobot {
+	Componants c = new Componants(() -> isEnabled() && isAutonomous());
+	Controls controls = new Controls();
+	
+
+
+
+  // class that handles basic drive		
+
+
+	public void robotInit() {
+		c.chooser = new SendableChooser();
+		c.chooser.addDefault("TEST_AUTO (DEFAULT)", define.AutonomousRoutines.TEST_AUTO);
+		c.chooser.addObject("NUMBER 2", define.AutonomousRoutines.NUMBER_2);
+		SmartDashboard.putData("AUTONOMOUS MODES", c.chooser);
+		
+		CameraServer.getInstance().startAutomaticCapture("pleaseffs", 0);
+		
+		//c.chooser = new SendableChooser();
+		//c.chooser.addDefault("TEST_AUTO (DEFAULT)", define.AutonomousRoutines.TEST_AUTO);
+		//c.chooser.addObject("NUMBER 2", define.AutonomousRoutines.NUMBER_2);
+		//SmartDashboard.putData("AUTONOMOUS MODES", c.chooser);
+		c.drive.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
+	    c.drive.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
+
+		}
+	public void autonomousInit(){ //Initialize for autonomous
+		SmartDashboard.putNumber("Gyro angle", c.gyro.getAngle());
+		//c.resetAll();
+		c.setSensors();
+		c.killMotors();
+		//c.chooser.addDefault("TEST_AUTO (DEFAULT)", define.AutonomousRoutines.TEST_AUTO);
+		//c.chooser.addObject("NUMBER 2", define.AutonomousRoutines.NUMBER_2);
+		//SmartDashboard.putData("AUTONOMOUS MODES", c.chooser);
+
+		try {
+			c.auto.run(c.auto.routines, c);
+		} catch (AutoEndException se) {
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
+	public void autonomousPeriodic(){
+		SmartDashboard.putNumber("Gyro angle", c.gyro.getAngle());
+		SmartDashboard.putNumber("Distance amount", c.rightDriveEncoder.getDistance());
+	}
+	
+	public void teleopInit(){
+		c.drive.stopMotor();
+		c.setSensors();
+		c.rightDriveEncoder.reset();
+		c.killMotors();
+		
+		//Initialize for teleop
+		
+	}
+	
 
-	@Override
-	public void operatorControl() {
-		myRobot.setSafetyEnabled(true);
-		while (isOperatorControl() && isEnabled()) {
-			if(buttonGet == false){
-				myRobot.arcadeDrive(Stick);
-				Timer.delay(0.005);
-				
+	public void teleopPeriodic() { 
+		SmartDashboard.putNumber("Gyro angle", c.gyro.getAngle());
+		SmartDashboard.putNumber("Distance amount", c.rightDriveEncoder.getDistance());
+
+		try{
+			if(controls.joystickTrigger())
+			{
+				c.drive.arcadeDrive(controls.joystickY(), -controls.joystickX());
 			}
-			else{
-				speedset = speedset * -1;
+			else
+			{
+				c.drive.arcadeDrive(-controls.joystickY(), -controls.joystickX());				
+			}
+			if(controls.rope())
+			{
+				c.ropeDrive.set(1);
+			}
+			else
+			{
+				c.ropeDrive.set(0);
+			}
+			if(controls.gearForward()){
+				c.gearDrive.set(0.3);
+			}
+			else if(controls.gearBackwards() != true){
+				c.gearDrive.set(0);
+			}
+			if(controls.gearBackwards()){
+				c.gearDrive.set(-0.3);
+			}
+			else if(controls.gearForward() != true){
+				c.gearDrive.set(0);
+			}
+			// 
+			// 
+		
+		}
+			catch (Exception e){
+				e.printStackTrace();
+			}
 			}
 			
 		}
-	}
-}
+	
+
